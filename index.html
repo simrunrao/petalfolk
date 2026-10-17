@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Petalfolk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Figtree:wght@400;500;600;700&family=Gaegu:wght@400;700&display=swap">
+<style>
+/* Layout: a studio bench (preview window + part controls) above a planted grid of sky-window tiles, each with a hand-lettered name stake. */
+:root {
+  --bg: #F2F4FA;
+  --surface: #FFFFFF;
+  --ink: #23203A;
+  --muted: #676480;
+  --line: #DAD8E8;
+  --accent: #2E7D4F;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E1F1E6;
+  --tile: #E6EDFA;
+  --tile-2: #F4F0FA;
+  --soil: #8A6A4F;
+  --grass: #D9EBDD;
+  --danger: #B3364A;
+  --font-display: "Bagel Fat One", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-hand: "Gaegu", "Comic Sans MS", "Chalkboard SE", cursive;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14121E; --surface: #1E1B2B; --ink: #EEEAF7; --muted: #A6A2BC; --line: #332F48;
+    --accent: #6CCB8C; --accent-ink: #10231A; --accent-soft: #1F3328;
+    --tile: #D9E2F3; --tile-2: #E9E3F3; --soil: #7A5C44; --grass: #1C2B22; --danger: #F07B8E;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14121E; --surface: #1E1B2B; --ink: #EEEAF7; --muted: #A6A2BC; --line: #332F48;
+  --accent: #6CCB8C; --accent-ink: #10231A; --accent-soft: #1F3328;
+  --tile: #D9E2F3; --tile-2: #E9E3F3; --soil: #7A5C44; --grass: #1C2B22; --danger: #F07B8E;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+}
+.wrap {
+  max-width: 1120px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+  display: grid; gap: 40px;
+}
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
+h1 {
+  font-family: var(--font-display); font-weight: 400; margin: 0;
+  font-size: clamp(2.4rem, 7vw, 4rem); line-height: .95; letter-spacing: -.01em;
+  color: var(--accent); text-wrap: balance;
+}
+.lede { margin: 8px 0 0; color: var(--muted); max-width: 52ch; }
+.count { font-family: var(--font-hand); font-size: 1.5rem; color: var(--ink); white-space: nowrap; }
+.count b { font-weight: 700; color: var(--accent); }
+h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; margin: 0; letter-spacing: .005em; }
+
+/* Studio */
+.studio {
+  display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 28px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 22px;
+}
+@media (max-width: 760px) { .studio { grid-template-columns: minmax(0, 1fr); padding: 16px; } }
+.preview-col { display: grid; gap: 12px; align-content: start; }
+.window {
+  position: relative; width: 100%; max-width: 340px; aspect-ratio: 3 / 4; justify-self: center;
+  border-radius: 16px; overflow: hidden;
+  background: linear-gradient(var(--tile), var(--tile-2));
+}
+.window::after {
+  content: ""; position: absolute; inset: auto 0 0; height: 4%;
+  background: var(--soil); border-radius: 0;
+}
+.window canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.window.drawing canvas { cursor: crosshair; touch-action: none; }
+.window .hint {
+  position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px;
+  font-family: var(--font-hand); font-size: 1.4rem; color: #6D6A86; pointer-events: none;
+}
+.plant { display: grid; gap: 8px; }
+.lbl { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+input[type="text"], textarea {
+  width: 100%; font: inherit; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+}
+#nameInput { font-family: var(--font-hand); font-size: 1.45rem; padding-block: 4px; }
+textarea { resize: vertical; min-height: 96px; }
+input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn {
+  font: inherit; font-weight: 700; cursor: pointer; border-radius: 999px; padding: 10px 18px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+.btn:hover { border-color: var(--ink); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+.btn.small { padding: 6px 12px; font-size: .85rem; }
+.note { font-size: .85rem; color: var(--muted); margin: 0; min-height: 1.3em; }
+.note.err { color: var(--danger); }
+
+.controls { display: grid; gap: 18px; align-content: start; min-width: 0; }
+.tabs { display: flex; gap: 4px; background: var(--bg); border-radius: 999px; padding: 4px; width: fit-content; max-width: 100%; flex-wrap: wrap; }
+.tab {
+  font: inherit; font-weight: 700; border: 0; background: transparent; color: var(--muted);
+  padding: 8px 16px; border-radius: 999px; cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(0 0 0 / .12); }
+.panel { display: grid; gap: 16px; }
+.group { display: grid; gap: 6px; align-content: start; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 10px; padding: 6px 11px; display: inline-flex; align-items: center; gap: 6px;
+}
+.chip:hover { border-color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.chip svg { width: 18px; height: 18px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.sw {
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer; padding: 0;
+  border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line);
+}
+.sw[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--ink); }
+input[type="color"] { width: 34px; height: 30px; border: 1px solid var(--line); border-radius: 8px; padding: 2px; background: var(--surface); cursor: pointer; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+
+/* Meadow: flowers sit straight on the page, overlapping a little, each at its own height */
+.garden-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; margin-bottom: 8px; }
+.meadow {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end;
+  padding-inline: 36px; padding-block: 0 24px; overflow-x: clip; row-gap: 4px;
+}
+.meadow:empty { display: none; }
+.plot {
+  position: relative; width: var(--w, 150px); margin-inline: -36px; margin-bottom: var(--lift, 0px);
+  display: grid; justify-items: center; gap: 2px; min-width: 0; z-index: var(--z, 1);
+}
+.plot .art { width: 100%; aspect-ratio: 3 / 4; max-width: 100%; transform-origin: 50% 100%; }
+.plot canvas { width: 100%; height: 100%; display: block; transform-origin: 50% 100%; }
+.plot .who {
+  font-family: var(--font-hand); font-weight: 700; font-size: 1.3rem; line-height: 1.05; text-align: center;
+  max-width: 120px; overflow-wrap: anywhere; margin-top: -4px;
+}
+.plot .when { font-size: .7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.plot-actions { display: flex; gap: 10px; justify-content: center; opacity: 0; transition: opacity .2s; min-height: 1.6em; }
+.plot:hover .plot-actions, .plot:focus-within .plot-actions { opacity: 1; }
+@media (hover: none) { .plot-actions { opacity: 1; } }
+.plot:hover, .plot:focus-within { z-index: 50; }
+@media (prefers-reduced-motion: no-preference) {
+  .plot canvas { animation: sway var(--dur, 6s) ease-in-out var(--delay, 0s) infinite alternate; }
+  .plot.grow .art { animation: bloom var(--grow-dur, 1.3s) cubic-bezier(.2, .8, .25, 1) var(--grow-delay, 0s) both; }
+  .plot.grow .who, .plot.grow .when { animation: fade .8s ease-out calc(var(--grow-delay, 0s) + var(--grow-dur, 1.3s) * .55) both; }
+  .plot.fresh .who { animation: fade .8s ease-out 1.6s both, glow 2.4s ease-in-out 2.2s 2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plot.grow { animation: fade .6s ease-out both; }
+}
+@keyframes sway { from { transform: rotate(-1.6deg); } to { transform: rotate(1.6deg); } }
+@keyframes bloom {
+  0% { opacity: 0; transform: translateY(14px) scale(.3, .15); filter: blur(6px); }
+  45% { opacity: 1; filter: blur(0); }
+  75% { transform: translateY(0) scale(1.04, 1.03); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes glow { 50% { color: var(--accent); } }
+.linkbtn {
+  font: inherit; font-size: .8rem; font-weight: 600; background: none; border: 0; padding: 2px 0;
+  color: var(--muted); cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+}
+.linkbtn:hover { color: var(--ink); }
+.linkbtn.danger { color: var(--danger); }
+.empty {
+  border: 2px dashed var(--line); border-radius: 18px; padding: 40px 20px; text-align: center; color: var(--muted);
+}
+.empty p { margin: 4px 0; }
+.empty .big { font-family: var(--font-hand); font-size: 1.6rem; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Petalfolk</h1>
+      <p class="lede">Every flower here belongs to someone. Grow yours, sign it, and watch it bloom into the meadow with everyone else's. Build it from parts or draw it by hand.</p>
+    </div>
+    <div class="count" id="count">Waking the meadow…</div>
+  </header>
+
+  <section class="studio" aria-label="Flower studio">
+    <div class="preview-col">
+      <div class="window" id="previewWin">
+        <canvas id="preview" width="600" height="800" aria-label="Your flower"></canvas>
+        <div class="hint" id="drawHint" hidden>Draw your flower here.<br>Start at the ground and go up.</div>
+      </div>
+      <div class="plant">
+        <label class="lbl" for="nameInput">Your name, on the stake</label>
+        <input type="text" id="nameInput" maxlength="40" placeholder="Write your name" autocomplete="nickname">
+        <div class="row">
+          <button class="btn primary" id="plantBtn" type="button">Plant in the meadow</button>
+        </div>
+        <p class="note" id="plantNote" role="status"></p>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-build" aria-selected="true" aria-controls="panel-build">Build from parts</button>
+        <button class="tab" role="tab" id="tab-draw" aria-selected="false" aria-controls="panel-draw">Draw by hand</button>
+      </div>
+
+      <div class="panel" id="panel-build" role="tabpanel" aria-labelledby="tab-build">
+        <div class="row"><button class="btn small" id="shuffleBtn" type="button">Surprise me</button></div>
+        <div id="partControls" class="grid2"></div>
+      </div>
+
+      <div class="panel" id="panel-draw" role="tabpanel" aria-labelledby="tab-draw" hidden>
+        <div class="group">
+          <span class="lbl">Ink</span>
+          <div class="swatches" id="inkSwatches"></div>
+        </div>
+        <div class="group">
+          <span class="lbl">Brush</span>
+          <div class="chips" id="brushChips"></div>
+        </div>
+        <div class="row">
+          <button class="btn small" id="undoBtn" type="button">Undo stroke</button>
+          <button class="btn small" id="clearBtn" type="button">Clear</button>
+        </div>
+        <p class="note">Draw on the window to the left with a mouse, finger or pen.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <section aria-labelledby="gardenTitle">
+    <div class="garden-head">
+      <h2 id="gardenTitle">The meadow</h2>
+      <p class="note" id="gardenNote"></p>
+    </div>
+    <div class="meadow" id="garden"></div>
+    <div class="empty" id="empty">
+      <p class="big">The meadow is bare so far.</p>
+      <p>Make a flower above, write your name, and plant the first one.</p>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+// Your Supabase project. The anon key is meant to be public; the table's security rules decide what it can do.
+const SUPABASE_URL = "https://xnrusbasohgjddvlwofy.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhucnVzYmFzb2hnamRkdmx3b2Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIyMDQ2NTMsImV4cCI6MjEwNzc4MDY1M30.wWuMV2hamBmkL8Gx6mFip6YLIjbxSdpcgNKpNtrJErM";
+(() => {
+  // ---------- flower model ----------
+  const OPT = {
+    petal: ["round", "pointed", "heart", "ruffled", "spiky", "teardrop"],
+    center: ["dot", "seeds", "ring", "star"],
+    stem: ["straight", "curvy", "leaning"],
+    height: ["short", "medium", "tall"],
+    size: ["s", "m", "l"],
+    centerSize: ["s", "m", "l"],
+  };
+  const PALETTE = ["#E8475F", "#F28C38", "#F6C445", "#F59AC0", "#B46BE0", "#5B7CF0", "#4FB8E6", "#FFFFFF", "#7A2E52", "#2E2A4A"];
+  const CENTERS = ["#F6C445", "#8A5A2B", "#3B2A1E", "#F28C38", "#FFF4D6", "#2E2A4A", "#E8475F"];
+  const STEMS = ["#3E8E4E", "#5FAE5A", "#2D6A4F", "#7A9A3A", "#4B6B5E"];
+  const HEX = /^#[0-9a-fA-F]{6}$/;
+
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const clampInt = (v, lo, hi, d) => { v = Math.round(Number(v)); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+  const oneOf = (v, list, d) => list.includes(v) ? v : d;
+  const hex = (v, d) => typeof v === "string" && HEX.test(v) ? v.toUpperCase() : d;
+
+  function normSpec(o) {
+    o = o && typeof o === "object" ? o : {};
+    return {
+      petal: oneOf(o.petal, OPT.petal, "round"),
+      count: clampInt(o.count, 3, 14, 6),
+      layers: clampInt(o.layers, 1, 3, 1),
+      petalColor: hex(o.petalColor, "#E8475F"),
+      petalColor2: hex(o.petalColor2, "#F59AC0"),
+      center: oneOf(o.center, OPT.center, "dot"),
+      centerColor: hex(o.centerColor, "#F6C445"),
+      centerSize: oneOf(o.centerSize, OPT.centerSize, "m"),
+      stem: oneOf(o.stem, OPT.stem, "straight"),
+      height: oneOf(o.height, OPT.height, "medium"),
+      stemColor: hex(o.stemColor, "#3E8E4E"),
+      leaves: clampInt(o.leaves, 0, 3, 2),
+      size: oneOf(o.size, OPT.size, "m"),
+    };
+  }
+  function hsl(h, s, l) {
+    s /= 100; l /= 100;
+    const f = n => { const k = (n + h / 30) % 12; const c = l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)); return Math.round(c * 255).toString(16).padStart(2, "0"); };
+    return ("#" + f(0) + f(8) + f(4)).toUpperCase();
+  }
+  function randomSpec() {
+    const h = Math.random() * 360;
+    return normSpec({
+      petal: pick(OPT.petal), count: 4 + Math.floor(Math.random() * 9), layers: pick([1, 1, 2, 2, 3]),
+      petalColor: hsl(h, 70 + Math.random() * 20, 55 + Math.random() * 12),
+      petalColor2: hsl((h + 25 + Math.random() * 40) % 360, 75, 72),
+      center: pick(OPT.center), centerColor: pick(CENTERS), centerSize: pick(OPT.centerSize),
+      stem: pick(OPT.stem), height: pick(OPT.height), stemColor: pick(STEMS),
+      leaves: Math.floor(Math.random() * 4), size: pick(OPT.size),
+    });
+  }
+
+  // ---------- color helpers ----------
+  const toRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const toHex = rgb => "#" + rgb.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0")).join("");
+  const mix = (a, b, t) => { const A = toRgb(a), B = toRgb(b); return toHex(A.map((v, i) => v + (B[i] - v) * t)); };
+  const shade = (h, t) => t < 0 ? mix(h, "#000000", -t) : mix(h, "#FFFFFF", t);
+
+  // ---------- drawing (logical canvas is 300 x 400, ground at y=384) ----------
+  const GROUND = 386;
+  function petalPath(ctx, shape, L, W) {
+    ctx.beginPath();
+    switch (shape) {
+      case "pointed":
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(L * .35, -W * .7, L * .75, -W * .45, L, 0);
+        ctx.bezierCurveTo(L * .75, W * .45, L * .35, W * .7, 0, 0); break;
+      case "heart":
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(L * .2, -W * .85, L * 1.12, -W * .85, L * .82, 0);
+        ctx.bezierCurveTo(L * 1.12, W * .85, L * .2, W * .85, 0, 0); break;
+      case "ruffled": {
+        const steps = 48;
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps * Math.PI * 2;
+          const wob = 1 + .09 * Math.sin(t * 9);
+          const x = L / 2 + Math.cos(t) * L / 2 * wob, y = Math.sin(t) * W / 2 * wob;
+          i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        }
+        break;
+      }
+      case "spiky":
+        ctx.moveTo(0, -W * .5);
+        ctx.quadraticCurveTo(L * .5, -W * .45, L, 0);
+        ctx.quadraticCurveTo(L * .5, W * .45, 0, W * .5); break;
+      case "teardrop":
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(L * .15, -W * .25, L * .55, -W * .62, L * .85, -W * .45);
+        ctx.bezierCurveTo(L * 1.08, -W * .3, L * 1.08, W * .3, L * .85, W * .45);
+        ctx.bezierCurveTo(L * .55, W * .62, L * .15, W * .25, 0, 0); break;
+      default:
+        ctx.ellipse(L * .52, 0, L * .5, W / 2, 0, 0, Math.PI * 2);
+    }
+    ctx.closePath();
+  }
+  const WIDTH = { round: .56, pointed: .5, heart: .72, ruffled: .62, spiky: .2, teardrop: .66 };
+
+  function cubicAt(p, t) {
+    const u = 1 - t;
+    return [0, 1].map(k => u * u * u * p[0][k] + 3 * u * u * t * p[1][k] + 3 * u * t * t * p[2][k] + t * t * t * p[3][k]);
+  }
+  function stemCurve(s) {
+    const hy = { short: 250, medium: 190, tall: 125 }[s.height];
+    const bx = 150, by = GROUND;
+    const span = by - hy;
+    if (s.stem === "curvy") return [[bx, by], [bx - 45, by - span * .35], [bx + 45, by - span * .7], [bx, hy]];
+    if (s.stem === "leaning") return [[bx, by], [bx, by - span * .45], [bx + 12, hy + span * .25], [bx + 42, hy]];
+    return [[bx, by], [bx, by - span * .33], [bx, by - span * .66], [bx, hy]];
+  }
+
+  function drawSpec(ctx, s) {
+    const k = { s: .78, m: 1, l: 1.2 }[s.size];
+    const curve = stemCurve(s);
+    const [hx, hy] = curve[3];
+    // stem
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = shade(s.stemColor, -.15); ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(...curve[0]); ctx.bezierCurveTo(...curve[1], ...curve[2], ...curve[3]); ctx.stroke();
+    ctx.strokeStyle = s.stemColor; ctx.lineWidth = 4.5; ctx.stroke();
+    // leaves
+    const spots = [.22, .42, .6];
+    for (let i = 0; i < s.leaves; i++) {
+      const t = spots[i], [x, y] = cubicAt(curve, t);
+      const side = i % 2 ? 1 : -1;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(side < 0 ? Math.PI + .75 : -.75);
+      const L = 52, W = 22;
+      petalPath(ctx, "pointed", L, W);
+      const g = ctx.createLinearGradient(0, 0, L, 0);
+      g.addColorStop(0, shade(s.stemColor, -.15)); g.addColorStop(1, shade(s.stemColor, .15));
+      ctx.fillStyle = g; ctx.fill();
+      ctx.strokeStyle = shade(s.stemColor, -.35); ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(2, 0); ctx.quadraticCurveTo(L * .5, -1.5, L * .9, 0);
+      ctx.strokeStyle = shade(s.stemColor, .3); ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.restore();
+    }
+    // petals, outer layer first
+    const baseL = 72 * k, baseW = baseL * WIDTH[s.petal] * (s.count > 9 && s.petal !== "spiky" ? .85 : 1);
+    for (let layer = 0; layer < s.layers; layer++) {
+      const lk = 1 - layer * .27;
+      const col = s.layers === 1 ? s.petalColor : mix(s.petalColor, s.petalColor2, layer / (s.layers - 1));
+      const L = baseL * lk, W = baseW * lk;
+      const off = layer * Math.PI / s.count + (s.stem === "leaning" ? .2 : 0);
+      for (let i = 0; i < s.count; i++) {
+        const a = off + i / s.count * Math.PI * 2 - Math.PI / 2;
+        ctx.save(); ctx.translate(hx, hy); ctx.rotate(a);
+        petalPath(ctx, s.petal, L, W);
+        const g = ctx.createLinearGradient(0, 0, L, 0);
+        g.addColorStop(0, shade(col, -.28)); g.addColorStop(.55, col); g.addColorStop(1, shade(col, .12));
+        ctx.fillStyle = g; ctx.fill();
+        ctx.strokeStyle = shade(col, -.38); ctx.lineWidth = 1.3; ctx.stroke();
+        ctx.restore();
+      }
+    }
+    // center
+    const r = { s: 11, m: 17, l: 25 }[s.centerSize] * k;
+    const cc = s.centerColor;
+    if (s.center === "star") {
+      ctx.beginPath();
+      for (let i = 0; i < 16; i++) {
+        const a = i / 16 * Math.PI * 2, rr = i % 2 ? r * .75 : r * 1.35;
+        ctx.lineTo(hx + Math.cos(a) * rr, hy + Math.sin(a) * rr);
+      }
+      ctx.closePath(); ctx.fillStyle = shade(cc, -.2); ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(hx, hy, r, 0, Math.PI * 2);
+    const cg = ctx.createRadialGradient(hx - r * .3, hy - r * .3, r * .1, hx, hy, r);
+    cg.addColorStop(0, shade(cc, .25)); cg.addColorStop(1, shade(cc, -.2));
+    ctx.fillStyle = cg; ctx.fill();
+    ctx.strokeStyle = shade(cc, -.4); ctx.lineWidth = 1.2; ctx.stroke();
+    if (s.center === "seeds") {
+      const n = Math.round(r * 2.4), golden = Math.PI * (3 - Math.sqrt(5));
+      ctx.fillStyle = shade(cc, -.45);
+      for (let i = 1; i < n; i++) {
+        const rr = r * .85 * Math.sqrt(i / n), a = i * golden;
+        ctx.beginPath(); ctx.arc(hx + Math.cos(a) * rr, hy + Math.sin(a) * rr, Math.max(.9, r * .07), 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (s.center === "ring") {
+      ctx.beginPath(); ctx.arc(hx, hy, r * .55, 0, Math.PI * 2);
+      ctx.fillStyle = mix(cc, s.petalColor, .5); ctx.fill();
+      ctx.fillStyle = shade(cc, .45);
+      for (let i = 0; i < 12; i++) {
+        const a = i / 12 * Math.PI * 2;
+        ctx.beginPath(); ctx.arc(hx + Math.cos(a) * r * .8, hy + Math.sin(a) * r * .8, Math.max(1, r * .08), 0, Math.PI * 2); ctx.fill();
+      }
+    } else {
+      ctx.beginPath(); ctx.arc(hx - r * .35, hy - r * .35, r * .22, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.fill();
+    }
+  }
+
+  function drawStrokes(ctx, strokes) {
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    for (const st of strokes) {
+      const p = st.p; if (!p || p.length < 2) continue;
+      ctx.strokeStyle = hex(st.c, "#2E2A4A"); ctx.fillStyle = ctx.strokeStyle;
+      ctx.lineWidth = clampInt(st.w, 1, 30, 6);
+      if (p.length === 2) { ctx.beginPath(); ctx.arc(p[0], p[1], ctx.lineWidth / 2, 0, Math.PI * 2); ctx.fill(); continue; }
+      ctx.beginPath(); ctx.moveTo(p[0], p[1]);
+      for (let i = 2; i < p.length - 2; i += 2) {
+        const mx = (p[i] + p[i + 2]) / 2, my = (p[i + 1] + p[i + 3]) / 2;
+        ctx.quadraticCurveTo(p[i], p[i + 1], mx, my);
+      }
+      ctx.lineTo(p[p.length - 2], p[p.length - 1]);
+      ctx.stroke();
+    }
+  }
+
+  function render(canvas, flower) {
+    const ctx = canvas.getContext("2d");
+    const sc = canvas.width / 300;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(sc, 0, 0, sc, 0, 0);
+    if (flower.kind === "drawn") drawStrokes(ctx, Array.isArray(flower.strokes) ? flower.strokes : []);
+    else drawSpec(ctx, normSpec(flower.spec));
+  }
+
+  // ---------- studio state ----------
+  const $ = id => document.getElementById(id);
+  const preview = $("preview"), previewWin = $("previewWin");
+  let spec = randomSpec();
+  let strokes = [];
+  let mode = "build";
+  let ink = "#2E2A4A", brush = 6;
+
+  function redraw() {
+    if (mode === "draw") {
+      render(preview, { kind: "drawn", strokes });
+      $("drawHint").hidden = strokes.length > 0;
+    } else {
+      render(preview, { kind: "spec", spec });
+      $("drawHint").hidden = true;
+    }
+    updatePlantState();
+  }
+
+  // tabs
+  const tabs = ["build", "draw"];
+  function setMode(m) {
+    mode = m;
+    for (const t of tabs) {
+      $("tab-" + t).setAttribute("aria-selected", String(t === m));
+      $("panel-" + t).hidden = t !== m;
+    }
+    previewWin.classList.toggle("drawing", m === "draw");
+    redraw();
+  }
+  for (const t of tabs) $("tab-" + t).addEventListener("click", () => setMode(t));
+
+  // part controls
+  const ICON = shape => {
+    const c = document.createElement("canvas"); c.width = 36; c.height = 36;
+    const x = c.getContext("2d"); x.translate(18, 31); x.rotate(-Math.PI / 2);
+    petalPath(x, shape, 26, 26 * WIDTH[shape] * 1.1);
+    x.fillStyle = "#E8475F"; x.fill(); x.strokeStyle = "#8C2232"; x.lineWidth = 1.2; x.stroke();
+    const img = document.createElement("img"); img.src = c.toDataURL(); img.alt = ""; img.width = 18; img.height = 18;
+    return img;
+  };
+  const LABELS = {
+    petal: { round: "Round", pointed: "Pointed", heart: "Heart", ruffled: "Ruffled", spiky: "Spiky", teardrop: "Teardrop" },
+    center: { dot: "Dot", seeds: "Seeds", ring: "Ring", star: "Starburst" },
+    stem: { straight: "Straight", curvy: "Curvy", leaning: "Leaning" },
+    height: { short: "Short", medium: "Medium", tall: "Tall" },
+    size: { s: "Small", m: "Medium", l: "Big" },
+    centerSize: { s: "Small", m: "Medium", l: "Big" },
+  };
+  const controls = [
+    { key: "petal", label: "Petal shape", type: "choice", icons: true },
+    { key: "count", label: "Petals", type: "choice", values: [3, 4, 5, 6, 8, 10, 12, 14] },
+    { key: "layers", label: "Petal layers", type: "choice", values: [1, 2, 3] },
+    { key: "size", label: "Bloom size", type: "choice" },
+    { key: "petalColor", label: "Outer petal color", type: "color", palette: PALETTE },
+    { key: "petalColor2", label: "Inner petal color", type: "color", palette: PALETTE, show: s => s.layers > 1 },
+    { key: "center", label: "Center", type: "choice" },
+    { key: "centerSize", label: "Center size", type: "choice" },
+    { key: "centerColor", label: "Center color", type: "color", palette: CENTERS },
+    { key: "stem", label: "Stem", type: "choice" },
+    { key: "height", label: "Height", type: "choice" },
+    { key: "leaves", label: "Leaves", type: "choice", values: [0, 1, 2, 3] },
+    { key: "stemColor", label: "Stem color", type: "color", palette: STEMS },
+  ];
+  const groupEls = {};
+  function buildControls() {
+    const host = $("partControls");
+    for (const c of controls) {
+      const g = document.createElement("div"); g.className = "group";
+      const lab = document.createElement("span"); lab.className = "lbl"; lab.textContent = c.label;
+      g.append(lab);
+      if (c.type === "choice") {
+        const wrap = document.createElement("div"); wrap.className = "chips";
+        const values = c.values || OPT[c.key];
+        for (const v of values) {
+          const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.dataset.v = String(v);
+          if (c.icons) b.append(ICON(v));
+          b.append(document.createTextNode(LABELS[c.key]?.[v] ?? String(v)));
+          b.addEventListener("click", () => { spec[c.key] = typeof values[0] === "number" ? Number(v) : v; syncControls(); redraw(); });
+          wrap.append(b);
+        }
+        g.append(wrap);
+      } else {
+        const wrap = document.createElement("div"); wrap.className = "swatches";
+        for (const col of c.palette) {
+          const b = document.createElement("button"); b.type = "button"; b.className = "sw"; b.dataset.v = col;
+          b.style.background = col; b.setAttribute("aria-label", c.label + " " + col);
+          b.addEventListener("click", () => { spec[c.key] = col; syncControls(); redraw(); });
+          wrap.append(b);
+        }
+        const inp = document.createElement("input"); inp.type = "color"; inp.id = "color-" + c.key;
+        inp.setAttribute("aria-label", "Custom " + c.label.toLowerCase());
+        inp.addEventListener("input", () => { spec[c.key] = inp.value.toUpperCase(); syncControls(); redraw(); });
+        wrap.append(inp);
+        g.append(wrap);
+      }
+      groupEls[c.key] = g;
+      host.append(g);
+    }
+  }
+  function syncControls() {
+    for (const c of controls) {
+      const g = groupEls[c.key];
+      g.hidden = c.show ? !c.show(spec) : false;
+      for (const b of g.querySelectorAll("[data-v]")) b.setAttribute("aria-pressed", String(b.dataset.v === String(spec[c.key])));
+      const inp = g.querySelector("input[type=color]"); if (inp) inp.value = spec[c.key].toLowerCase();
+    }
+  }
+  $("shuffleBtn").addEventListener("click", () => { spec = randomSpec(); syncControls(); redraw(); });
+
+  // draw panel
+  const INKS = ["#2E2A4A", "#E8475F", "#F28C38", "#F6C445", "#F59AC0", "#B46BE0", "#5B7CF0", "#4FB8E6", "#3E8E4E", "#8A5A2B", "#FFFFFF"];
+  function buildDraw() {
+    const sw = $("inkSwatches");
+    for (const c of INKS) {
+      const b = document.createElement("button"); b.type = "button"; b.className = "sw"; b.style.background = c; b.dataset.v = c;
+      b.setAttribute("aria-label", "Ink " + c);
+      b.addEventListener("click", () => { ink = c; syncDraw(); });
+      sw.append(b);
+    }
+    const inp = document.createElement("input"); inp.type = "color"; inp.id = "inkCustom"; inp.setAttribute("aria-label", "Custom ink");
+    inp.addEventListener("input", () => { ink = inp.value.toUpperCase(); syncDraw(); });
+    sw.append(inp);
+    const bc = $("brushChips");
+    for (const [w, name] of [[3, "Fine"], [6, "Medium"], [12, "Thick"], [22, "Fat"]]) {
+      const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.dataset.v = String(w); b.textContent = name;
+      b.addEventListener("click", () => { brush = w; syncDraw(); });
+      bc.append(b);
+    }
+    syncDraw();
+  }
+  function syncDraw() {
+    for (const b of $("inkSwatches").querySelectorAll("[data-v]")) b.setAttribute("aria-pressed", String(b.dataset.v === ink));
+    $("inkCustom").value = ink.toLowerCase();
+    for (const b of $("brushChips").querySelectorAll("[data-v]")) b.setAttribute("aria-pressed", String(Number(b.dataset.v) === brush));
+  }
+  const MAX_POINTS = 12000;
+  const totalPoints = () => strokes.reduce((n, s) => n + s.p.length / 2, 0);
+  let cur = null;
+  function pt(e) {
+    const r = preview.getBoundingClientRect();
+    return [Math.round((e.clientX - r.left) / r.width * 300), Math.round((e.clientY - r.top) / r.height * 400)];
+  }
+  preview.addEventListener("pointerdown", e => {
+    if (mode !== "draw") return;
+    if (totalPoints() > MAX_POINTS) { setNote("plantNote", "This drawing is full. Undo a few strokes to keep drawing.", true); return; }
+    preview.setPointerCapture(e.pointerId);
+    cur = { c: ink, w: brush, p: pt(e) };
+    strokes.push(cur); redraw();
+  });
+  preview.addEventListener("pointermove", e => {
+    if (!cur) return;
+    const [x, y] = pt(e), p = cur.p;
+    if (Math.hypot(x - p[p.length - 2], y - p[p.length - 1]) < 2) return;
+    p.push(x, y); redraw();
+  });
+  const endStroke = () => { cur = null; };
+  preview.addEventListener("pointerup", endStroke);
+  preview.addEventListener("pointercancel", endStroke);
+  $("undoBtn").addEventListener("click", () => { strokes.pop(); redraw(); });
+  $("clearBtn").addEventListener("click", () => { strokes = []; redraw(); });
+
+  // ---------- name ----------
+  const nameInput = $("nameInput");
+  try { nameInput.value = localStorage.getItem("ng-name") || ""; } catch {}
+  nameInput.addEventListener("input", () => {
+    try { localStorage.setItem("ng-name", nameInput.value); } catch {}
+    updatePlantState();
+  });
+
+  function setNote(id, msg, err) { const n = $(id); n.textContent = msg; n.classList.toggle("err", !!err); }
+
+  // ---------- database ----------
+  let sb = null, dbReady = false, myHash = null;
+  // each browser gets a private token; only its hash is stored, so only this browser can dig up its flowers
+  async function sha256(text) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+  let myToken = null;
+  try { myToken = localStorage.getItem("petalfolk-token"); if (!myToken) { myToken = crypto.randomUUID(); localStorage.setItem("petalfolk-token", myToken); } } catch {}
+  if (!myToken) myToken = crypto.randomUUID();
+
+  function updatePlantState() {
+    const btn = $("plantBtn");
+    const hasArt = mode !== "draw" || strokes.length > 0;
+    btn.disabled = !dbReady || !nameInput.value.trim() || !hasArt || planting;
+  }
+  let planting = false;
+  $("plantBtn").addEventListener("click", async () => {
+    const name = nameInput.value.trim().slice(0, 40);
+    if (!sb || !name) return;
+    const row = mode === "draw"
+      ? { kind: "drawn", strokes: strokes.map(s => ({ c: s.c, w: s.w, p: s.p.slice() })) }
+      : { kind: "spec", spec: { ...spec } };
+    row.name = name; row.token_hash = myHash;
+    planting = true; updatePlantState(); setNote("plantNote", "Planting…");
+    const { data, error } = await sb.from("flowers").insert(row).select().single();
+    planting = false; updatePlantState();
+    if (error) { setNote("plantNote", "That didn't plant. Check your connection and try again.", true); return; }
+    upsertRow(data);
+    setNote("plantNote", "Planted. Watch it bloom in the meadow.");
+    if (mode === "draw") { strokes = []; redraw(); }
+  });
+
+  // ---------- garden ----------
+  const garden = $("garden");
+  const plots = new Map();
+  let docsCache = [];
+  const fmtDate = ms => new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+  // stable per-flower variety, so each flower keeps its spot in the meadow across reloads
+  function hash(str) { let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+  let meadowSeeded = false;
+  function makePlot(snap, order) {
+    const d = snap.data();
+    const r = hash(snap.id), rnd = k => ((r >>> k) & 255) / 255;
+    const el = document.createElement("article"); el.className = "plot grow";
+    el.style.setProperty("--w", Math.round(128 + rnd(0) * 48) + "px");
+    el.style.setProperty("--lift", Math.round(rnd(8) * 26) + "px");
+    el.style.setProperty("--z", String(1 + Math.round(rnd(16) * 20)));
+    if (meadowSeeded) {
+      el.classList.add("fresh");
+      el.style.setProperty("--grow-dur", "2.4s");
+    } else {
+      el.style.setProperty("--grow-delay", Math.min(order * 90, 3600) + "ms");
+    }
+    const art = document.createElement("div"); art.className = "art";
+    const cv = document.createElement("canvas"); cv.width = 300; cv.height = 400;
+    cv.style.setProperty("--dur", (5 + rnd(4) * 3).toFixed(2) + "s");
+    cv.style.setProperty("--delay", (-rnd(12) * 6).toFixed(2) + "s");
+    cv.setAttribute("role", "img");
+    cv.setAttribute("aria-label", (d.kind === "drawn" ? "Hand-drawn flower" : "Flower") + " by " + (d.name || "someone"));
+    art.append(cv);
+    const who = document.createElement("span"); who.className = "who"; who.textContent = String(d.name || "Someone").slice(0, 40);
+    const when = document.createElement("span"); when.className = "when"; when.textContent = Number.isFinite(d.createdAt) ? fmtDate(d.createdAt) : "";
+    const actions = document.createElement("div"); actions.className = "plot-actions";
+    if (d.kind !== "drawn") {
+      const remix = document.createElement("button"); remix.type = "button"; remix.className = "linkbtn"; remix.textContent = "Remix";
+      remix.addEventListener("click", () => {
+        spec = normSpec(d.spec); syncControls(); setMode("build");
+        document.querySelector(".studio").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      actions.append(remix);
+    }
+    if (myHash && d.tokenHash === myHash) {
+      const rm = document.createElement("button"); rm.type = "button"; rm.className = "linkbtn danger"; rm.textContent = "Dig up";
+      let armed = false, timer;
+      rm.addEventListener("click", async () => {
+        if (!armed) { armed = true; rm.textContent = "Tap again to dig up"; timer = setTimeout(() => { armed = false; rm.textContent = "Dig up"; }, 3500); return; }
+        clearTimeout(timer); rm.disabled = true;
+        const { data: ok, error } = await sb.rpc("dig_up", { flower_id: snap.id, token: myToken });
+        if (error || !ok) { rm.disabled = false; rm.textContent = "Couldn't remove. Try again"; armed = false; return; }
+        removeRow(snap.id);
+      });
+      actions.append(rm);
+    }
+    el.append(art, who, when, actions);
+    render(cv, d);
+    return el;
+  }
+
+  function renderGarden(docs) {
+    docsCache = docs;
+    const seen = new Set();
+    let prev = null;
+    for (const snap of docs) {
+      seen.add(snap.id);
+      let entry = plots.get(snap.id);
+      if (!entry || entry.snap !== snap) {
+        const el = makePlot(snap, plots.size);
+        if (entry) { el.classList.remove("grow", "fresh"); entry.el.replaceWith(el); }
+        else if (meadowSeeded && myHash && snap.data().tokenHash === myHash) requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "center" }));
+        entry = { snap, el }; plots.set(snap.id, entry);
+      }
+      const want = prev ? prev.nextSibling : garden.firstChild;
+      if (want !== entry.el) garden.insertBefore(entry.el, want);
+      prev = entry.el;
+    }
+    for (const [id, entry] of plots) if (!seen.has(id)) { entry.el.remove(); plots.delete(id); }
+    $("empty").hidden = docs.length > 0;
+    const n = docs.length;
+    $("count").innerHTML = "";
+    const b = document.createElement("b"); b.textContent = String(n);
+    $("count").append(b, document.createTextNode(n === 1 ? " flower planted" : " flowers planted"));
+  }
+
+  // rows from Supabase, wrapped in the same {id, data()} shape the meadow renders
+  const rows = new Map();
+  function wrap(r) {
+    const d = { name: r.name, kind: r.kind, spec: r.spec, strokes: r.strokes, createdAt: Date.parse(r.created_at), tokenHash: r.token_hash };
+    return { id: r.id, data: () => d };
+  }
+  function refresh() {
+    renderGarden([...rows.values()].sort((a, b) => b.data().createdAt - a.data().createdAt));
+  }
+  function upsertRow(r) {
+    const old = rows.get(r.id);
+    if (old && old.data().createdAt === Date.parse(r.created_at) && old.data().name === r.name) return;
+    rows.set(r.id, wrap(r)); refresh();
+  }
+  function removeRow(id) { if (rows.delete(id)) refresh(); }
+
+  async function start() {
+    buildControls(); syncControls(); buildDraw();
+    setMode("build");
+    $("empty").hidden = false;
+    renderGarden([]);
+    $("count").textContent = "Waking the meadow…";
+    myHash = await sha256(myToken);
+    if (!window.supabase || SUPABASE_ANON_KEY.startsWith("PASTE")) return offline("The meadow isn't connected to its database yet.");
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    sb.channel("meadow")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "flowers" }, p => upsertRow(p.new))
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "flowers" }, p => p.old?.id && removeRow(p.old.id))
+      .subscribe();
+    const { data, error } = await sb.from("flowers").select("*").order("created_at", { ascending: false }).limit(1000);
+    if (error) return offline("The meadow couldn't load. Reload the page to try again.");
+    for (const r of data) rows.set(r.id, wrap(r));
+    refresh();
+    meadowSeeded = true;
+    dbReady = true; updatePlantState();
+  }
+  function offline(msg) {
+    $("count").textContent = "Meadow closed";
+    setNote("gardenNote", msg, true);
+    setNote("plantNote", "Planting is paused until the meadow loads.");
+    updatePlantState();
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>
